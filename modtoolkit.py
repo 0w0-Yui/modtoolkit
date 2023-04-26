@@ -13,8 +13,10 @@ bl_info = {
 import bpy
 from bpy.props import IntProperty, StringProperty, PointerProperty, CollectionProperty
 from bpy.types import PropertyGroup, UIList, Operator, Panel, Menu, Scene, Armature, Mesh
+from bpy.utils import register_class, unregister_class
 from bl_operators.presets import AddPresetBase
 import os
+
 
 
 class ListItem(PropertyGroup):
@@ -24,6 +26,7 @@ class ListItem(PropertyGroup):
 
 class MY_UL_List(UIList):
     bl_idname = "MY_UL_List"
+    bl_label = ""
 
     def draw_item(
         self, context, layout, data, item, icon, active_data, active_propname, index
@@ -38,7 +41,7 @@ class MY_UL_List(UIList):
 
 class LIST_OT_NewItem(Operator):
     bl_idname = "my_list.new_item"
-    bl_label = "添加一项"
+    bl_label = "add"
 
     def execute(self, context):
         context.scene.my_list.add()
@@ -48,7 +51,7 @@ class LIST_OT_NewItem(Operator):
 
 class LIST_OT_DeleteItem(Operator):
     bl_idname = "my_list.delete_item"
-    bl_label = "Deletes an item"
+    bl_label = "remove"
 
     @classmethod
     def poll(cls, context):
@@ -66,6 +69,7 @@ class LIST_OT_DeleteItem(Operator):
 
 class menu_presets(Menu):
     bl_label = "presets"
+    bl_icon="PRESET"
     preset_subdir = "yuinomodtools"
     preset_operator = "script.execute_preset"
     draw = Menu.draw_preset
@@ -92,7 +96,7 @@ class CreditPanel(Panel):
     bl_idname = "OBJECT_PT_credit"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "My Addon"
+    bl_category = "YuiのModToolkit"
 
     def draw(self, context):
         layout = self.layout
@@ -119,42 +123,42 @@ class MyAddonPanel(Panel):
     bl_idname = "OBJECT_PT_my_addon"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "My Addon"
+    bl_category = "YuiのModToolkit"
 
     def draw(self, context):
         layout = self.layout
         scene = context.scene
 
         box = layout.box()
-        box.label(text="Select an armature:")
+        box.label(text="select an armature:")
         box.prop(scene, "armature_pointer", text="")
-        box.label(text="Select an mesh:")
+        box.label(text="select a mesh:")
         box.prop(scene, "mesh_pointer", text="")
 
-        box.operator("object.start_assignment", text="start assign")
+        box.operator(StartAssign.bl_idname, text=StartAssign.bl_label)
 
         box1 = layout.box()
 
         box1.label(text=context.scene.vertex_group_string)
 
-        box1.operator("object.next", text="next")
+        box1.operator(Next.bl_idname, text=Next.bl_label)
 
         row = box1.row()
         row.template_list(
-            "MY_UL_List", "The_List", scene, "my_list", scene, "list_index"
+            MY_UL_List.bl_idname, "The_List", scene, "my_list", scene, "list_index"
         )
 
         row1 = box1.row()
-        row1.operator("my_list.new_item", text="add")
-        row1.operator("my_list.delete_item", text="remove")
+        row1.operator(LIST_OT_NewItem.bl_idname, text=LIST_OT_NewItem.bl_label)
+        row1.operator(LIST_OT_DeleteItem.bl_idname, text=LIST_OT_DeleteItem.bl_label)
         box1.operator(Done.bl_idname, text=Done.bl_label)
 
         box2 = layout.box()
         row = box2.row()
-        row.menu(menu_presets.__name__, text=menu_presets.bl_label, icon="PRESET")
+        row.menu(menu_presets.__name__, text=menu_presets.bl_label, icon=menu_presets.bl_icon)
         row1 = box2.row(align=True)
-        row1.operator("menu.add_preset", text="save")
-        row1.operator("menu.add_preset", text="remove").remove_active = True
+        row1.operator(add_presets.bl_idname, text="save")
+        row1.operator(add_presets.bl_idname, text="delete").remove_active = True
         row1 = box2.row(align=True)
         row1.operator(OpenPresetFolder.bl_idname, text=OpenPresetFolder.bl_label)
 
@@ -308,19 +312,12 @@ class Done(Operator):
         return {"FINISHED"}
 
 
+classes=(MyAddonPanel,StartAssign,Next,Done,ListItem,MY_UL_List,LIST_OT_NewItem,LIST_OT_DeleteItem,menu_presets,add_presets,CreditPanel,OpenPresetFolder)
+
+
 def register():
-    bpy.utils.register_class(MyAddonPanel)
-    bpy.utils.register_class(StartAssign)
-    bpy.utils.register_class(Next)
-    bpy.utils.register_class(Done)
-    bpy.utils.register_class(ListItem)
-    bpy.utils.register_class(MY_UL_List)
-    bpy.utils.register_class(LIST_OT_NewItem)
-    bpy.utils.register_class(LIST_OT_DeleteItem)
-    bpy.utils.register_class(menu_presets)
-    bpy.utils.register_class(add_presets)
-    bpy.utils.register_class(CreditPanel)
-    bpy.utils.register_class(OpenPresetFolder)
+    for cls in classes:
+        register_class(cls)
 
     Scene.armature_pointer = PointerProperty(type=Armature)
     Scene.mesh_pointer = PointerProperty(type=Mesh)
@@ -333,18 +330,8 @@ def register():
 
 
 def unregister():
-    bpy.utils.unregister_class(MyAddonPanel)
-    bpy.utils.unregister_class(StartAssign)
-    bpy.utils.unregister_class(Next)
-    bpy.utils.unregister_class(Done)
-    bpy.utils.unregister_class(ListItem)
-    bpy.utils.unregister_class(MY_UL_List)
-    bpy.utils.unregister_class(LIST_OT_NewItem)
-    bpy.utils.unregister_class(LIST_OT_DeleteItem)
-    bpy.utils.unregister_class(menu_presets)
-    bpy.utils.unregister_class(add_presets)
-    bpy.utils.unregister_class(CreditPanel)
-    bpy.utils.unregister_class(OpenPresetFolder)
+    for cls in reversed(classes):
+        unregister_class(cls)
 
     del Scene.armature_pointer
     del Scene.mesh_pointer
