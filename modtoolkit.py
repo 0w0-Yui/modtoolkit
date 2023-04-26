@@ -2,7 +2,7 @@ bl_info = {
     "name": "Yui's Modding Toolkit",
     "description": "Useful toolkit for modding",
     "author": "0w0-Yui <yui@lioat.cn>",
-    "version": (0, 1, 1),
+    "version": (0, 1, 2),
     "blender": (2, 83, 0),
     "location": "View 3D > Toolshelf",
     "doc_url": "https://github.com/0w0-Yui/modtoolkit",
@@ -12,11 +12,19 @@ bl_info = {
 
 import bpy
 from bpy.props import IntProperty, StringProperty, PointerProperty, CollectionProperty
-from bpy.types import PropertyGroup, UIList, Operator, Panel, Menu, Scene, Armature, Mesh, Object
+from bpy.types import (
+    PropertyGroup,
+    UIList,
+    Operator,
+    Panel,
+    Menu,
+    Scene,
+    Armature,
+    Object,
+)
 from bpy.utils import register_class, unregister_class
 from bl_operators.presets import AddPresetBase
 import os
-
 
 
 class ListItem(PropertyGroup):
@@ -69,7 +77,7 @@ class LIST_OT_DeleteItem(Operator):
 
 class menu_presets(Menu):
     bl_label = "presets"
-    bl_icon="PRESET"
+    bl_icon = "PRESET"
     preset_subdir = "yuinomodtools"
     preset_operator = "script.execute_preset"
     draw = Menu.draw_preset
@@ -135,27 +143,33 @@ class MyAddonPanel(Panel):
         box.label(text="select a mesh:")
         box.prop(scene, "mesh_pointer", text="")
 
-        box.operator(StartAssign.bl_idname, text=StartAssign.bl_label)
+        row = box.row(align=True)
+        row.operator(StartAssign.bl_idname, text=StartAssign.bl_label)
+        row.operator(Stop.bl_idname, text=Stop.bl_label)
 
         box1 = layout.box()
 
         box1.label(text=context.scene.vertex_group_string)
 
-        box1.operator(Next.bl_idname, text=Next.bl_label)
+        row = box1.row(align=True)
+        row.operator(Next.bl_idname, text=Next.bl_label)
+        row.operator(Skip.bl_idname, text=Skip.bl_label)
 
         row = box1.row()
         row.template_list(
             MY_UL_List.bl_idname, "The_List", scene, "my_list", scene, "list_index"
         )
 
-        row1 = box1.row()
+        row1 = box1.row(align=True)
         row1.operator(LIST_OT_NewItem.bl_idname, text=LIST_OT_NewItem.bl_label)
         row1.operator(LIST_OT_DeleteItem.bl_idname, text=LIST_OT_DeleteItem.bl_label)
         box1.operator(Done.bl_idname, text=Done.bl_label)
 
         box2 = layout.box()
         row = box2.row()
-        row.menu(menu_presets.__name__, text=menu_presets.bl_label, icon=menu_presets.bl_icon)
+        row.menu(
+            menu_presets.__name__, text=menu_presets.bl_label, icon=menu_presets.bl_icon
+        )
         row1 = box2.row(align=True)
         row1.operator(add_presets.bl_idname, text="save")
         row1.operator(add_presets.bl_idname, text="delete").remove_active = True
@@ -184,10 +198,10 @@ class Kit(Operator):
     def report(message, title="INFO", icon="INFO"):
         def draw(self, context):
             self.layout.label(text=message)
+
         bpy.context.window_manager.popup_menu(draw, title=title, icon=icon)
 
     def get_all_vg(obj):
-#        obj = bpy.data.objects[obj.name]
         vg_list = []
         for vg in obj.vertex_groups:
             # 获取顶点组的名称和索引
@@ -201,7 +215,6 @@ class Kit(Operator):
         context.scene.vertex_group_string = f"current vertex group: {string}"
 
 
-
 class StartAssign(Operator):
     bl_idname = "object.start_assignment"
     bl_label = "start assign"
@@ -209,7 +222,7 @@ class StartAssign(Operator):
     def execute(self, context):
         vg_list = []
         selected_mesh = context.scene.mesh_pointer
-        print(context.scene.assign_index)
+        print("start quick assign")
         context.scene.assign_index = 0
         vg_list = Kit.get_all_vg(selected_mesh)
         Kit.select_vg(vg_list[context.scene.assign_index]["name"])
@@ -227,18 +240,53 @@ class Next(Operator):
         list = context.scene.my_list
         index = context.scene.assign_index
         vg_list = Kit.get_all_vg(selected_mesh)
-        if selected_bone != None and index >= 0 and index < len(vg_list):
-            print("added")
+        if len(selected_bone) == 0:
+            Kit.report("no bone selected")
+            return {"FINISHED"}
+        if index >= 0 and index < len(vg_list):
             item = list.add()
             item.vg = vg_list[index]["name"]
             item.bone = selected_bone[0].name
+            print("{item.vg} -> {item.bone} added")
             index += 1
         if index < len(vg_list):
             Kit.select_vg(vg_list[index]["name"])
             Kit.update_label_vg(context, vg_list[context.scene.assign_index]["name"])
         else:
-            context.scene.vertex_group_string=f"current vertex group: {None}"
+            context.scene.vertex_group_string = f"current vertex group: {None}"
         context.scene.assign_index = index
+        return {"FINISHED"}
+
+
+class Skip(Operator):
+    bl_idname = "object.skip"
+    bl_label = "skip"
+
+    def execute(self, context):
+        selected_mesh = context.scene.mesh_pointer
+        index = context.scene.assign_index
+        vg_list = Kit.get_all_vg(selected_mesh)
+        if index >= 0 and index < len(vg_list):
+            print("{item.vg} skipped")
+            index += 1
+        if index < len(vg_list):
+            Kit.select_vg(vg_list[index]["name"])
+            Kit.update_label_vg(context, vg_list[context.scene.assign_index]["name"])
+        else:
+            context.scene.vertex_group_string = f"current vertex group: {None}"
+        context.scene.assign_index = index
+        return {"FINISHED"}
+
+
+class Stop(Operator):
+    bl_idname = "object.stop"
+    bl_label = "reset assign"
+
+    def execute(self, context):
+        index = 0
+        context.scene.vertex_group_string = f"current vertex group: {None}"
+        context.scene.assign_index = index
+        print("stop quick assign")
         return {"FINISHED"}
 
 
@@ -264,6 +312,7 @@ class Done(Operator):
                         new_name = f"{old_name}.old.{str(index).zfill(3)}"
                     if vertex_group is not None:
                         vertex_group.name = new_name
+                        print("{old_name} -> {new_name} renamed")
                     else:
                         print(f'No vertex group found with name "{old_name}"')
 
@@ -291,6 +340,7 @@ class Done(Operator):
                 for vertex_group_name in vertex_group_names:
                     if mesh.vertex_groups[vertex_group_name].index in available_groups:
                         weights.append(mesh.vertex_groups[vertex_group_name].weight(id))
+                print("{vertex_group_names} -> {merged_group_name} renamed with merge")
                 sum = 0
                 for num in weights:
                     sum += num
@@ -309,11 +359,27 @@ class Done(Operator):
             Kit.select_vg(old_name)
             bpy.ops.object.vertex_group_copy()
             vertex_groups[-1].name = new_name
+            print("{old_name} -> {new_name} renamed")
 
         return {"FINISHED"}
 
 
-classes=(MyAddonPanel,StartAssign,Next,Done,ListItem,MY_UL_List,LIST_OT_NewItem,LIST_OT_DeleteItem,menu_presets,add_presets,CreditPanel,OpenPresetFolder)
+classes = (
+    MyAddonPanel,
+    StartAssign,
+    Next,
+    Done,
+    ListItem,
+    MY_UL_List,
+    LIST_OT_NewItem,
+    LIST_OT_DeleteItem,
+    menu_presets,
+    add_presets,
+    CreditPanel,
+    OpenPresetFolder,
+    Stop,
+    Skip,
+)
 
 
 def register():
