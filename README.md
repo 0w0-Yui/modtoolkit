@@ -12,7 +12,7 @@
 
 ## 快速上手
 #### 安装
-请先下载[modtoolkit-main.zip](https://github.com/0w0-Yui/modtoolkit/archive/refs/heads/modtoolkit-main.zip)
+请先下载[modtoolkit-main.zip](https://github.com/0w0-Yui/modtoolkit/archive/refs/heads/main.zip)
 
 然后在Blender中导航到 工具栏 -> Edit -> Add-ons -> Install 安装这个压缩包并在Blender中启用该插件
 <!---#### 顶点组重命名工具
