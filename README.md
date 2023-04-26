@@ -1,6 +1,14 @@
 # YuiのModToolkit
 **一个提升在blender环境下模组制作效率的工具包**
 
+## :warning:警告:warning:
+
+**此项目包含：~~复制粘贴
+乱七八糟命名
+Flake8-E501
+ChatGPT
+长期不更新~~**
+
 ## TODO:
 - [x] ~~权重重命名工具~~
 - [ ] 中英文切换
