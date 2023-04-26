@@ -12,7 +12,7 @@ bl_info = {
 
 import bpy
 from bpy.props import IntProperty, StringProperty, PointerProperty, CollectionProperty
-from bpy.types import PropertyGroup, UIList, Operator, Panel, Menu, Scene, Armature, Mesh
+from bpy.types import PropertyGroup, UIList, Operator, Panel, Menu, Scene, Armature, Mesh, Object
 from bpy.utils import register_class, unregister_class
 from bl_operators.presets import AddPresetBase
 import os
@@ -187,7 +187,7 @@ class Kit(Operator):
         bpy.context.window_manager.popup_menu(draw, title=title, icon=icon)
 
     def get_all_vg(obj):
-        obj = bpy.data.objects[obj.name]
+#        obj = bpy.data.objects[obj.name]
         vg_list = []
         for vg in obj.vertex_groups:
             # 获取顶点组的名称和索引
@@ -227,7 +227,6 @@ class Next(Operator):
         list = context.scene.my_list
         index = context.scene.assign_index
         vg_list = Kit.get_all_vg(selected_mesh)
-        print(selected_bone[0].name, index, len(vg_list))
         if selected_bone != None and index >= 0 and index < len(vg_list):
             print("added")
             item = list.add()
@@ -237,6 +236,8 @@ class Next(Operator):
         if index < len(vg_list):
             Kit.select_vg(vg_list[index]["name"])
             Kit.update_label_vg(context, vg_list[context.scene.assign_index]["name"])
+        else:
+            context.scene.vertex_group_string=f"current vertex group: {None}"
         context.scene.assign_index = index
         return {"FINISHED"}
 
@@ -320,7 +321,7 @@ def register():
         register_class(cls)
 
     Scene.armature_pointer = PointerProperty(type=Armature)
-    Scene.mesh_pointer = PointerProperty(type=Mesh)
+    Scene.mesh_pointer = PointerProperty(type=Object)
     Scene.my_list = CollectionProperty(type=ListItem)
     Scene.list_index = IntProperty(name="list index", default=0)
     Scene.assign_index = IntProperty(name="global index", default=-1)
