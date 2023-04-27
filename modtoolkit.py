@@ -213,6 +213,9 @@ class Kit(Operator):
 
     def update_label_vg(context, string):
         context.scene.vertex_group_string = f"current vertex group: {string}"
+        
+    def is_mesh(scene, obj):
+        return obj.type == 'MESH'
 
 
 class StartAssign(Operator):
@@ -251,7 +254,7 @@ class Next(Operator):
             index += 1
         if index < len(vg_list):
             Kit.select_vg(vg_list[index]["name"])
-            Kit.update_label_vg(context, vg_list[context.scene.assign_index]["name"])
+            Kit.update_label_vg(context, vg_list[index]["name"])
         else:
             context.scene.vertex_group_string = f"current vertex group: {None}"
         context.scene.assign_index = index
@@ -340,7 +343,7 @@ class Done(Operator):
                 for vertex_group_name in vertex_group_names:
                     if mesh.vertex_groups[vertex_group_name].index in available_groups:
                         weights.append(mesh.vertex_groups[vertex_group_name].weight(id))
-                print("{vertex_group_names} -> {merged_group_name} renamed with merge")
+                print(f"{vertex_group_names} -> {merged_group_name} renamed with merge")
                 sum = 0
                 for num in weights:
                     sum += num
@@ -359,7 +362,7 @@ class Done(Operator):
             Kit.select_vg(old_name)
             bpy.ops.object.vertex_group_copy()
             vertex_groups[-1].name = new_name
-            print("{old_name} -> {new_name} renamed")
+            print(f"{old_name} -> {new_name} renamed")
 
         return {"FINISHED"}
 
@@ -387,7 +390,7 @@ def register():
         register_class(cls)
 
     Scene.armature_pointer = PointerProperty(type=Armature)
-    Scene.mesh_pointer = PointerProperty(type=Object)
+    Scene.mesh_pointer = PointerProperty(type=Object, poll=Kit.is_mesh)
     Scene.my_list = CollectionProperty(type=ListItem)
     Scene.list_index = IntProperty(name="list index", default=0)
     Scene.assign_index = IntProperty(name="global index", default=-1)
