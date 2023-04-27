@@ -33,5 +33,6 @@ ChatGPT
 且确保模型有骨骼修改器
 [![pointer guide](https://raw.githubusercontent.com/0w0-Yui/modtoolkit/modtoolkit-main/readme_assets/2.png "pointer guide")](https://raw.githubusercontent.com/0w0-Yui/modtoolkit/modtoolkit-main/readme_assets/2.png "armature modifier")
 --->
+具体教程可以加群675557354，里面有视频
 
 
