@@ -247,6 +247,9 @@ class StartAssign(Operator):
     bl_label = "start assign"
 
     def execute(self, context):
+        if bpy.context.object.mode != "WEIGHT_PAINT":
+            Kit.report("please enter weight paint mode")
+            return {"FINISHED"}
         vg_list = []
         selected_mesh = context.scene.mesh_pointer
         print("start quick assign")
