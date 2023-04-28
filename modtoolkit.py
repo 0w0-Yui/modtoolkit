@@ -2,7 +2,7 @@ bl_info = {
     "name": "Yui's Modding Toolkit",
     "description": "Useful toolkit for modding",
     "author": "0w0-Yui <yui@lioat.cn>",
-    "version": (0, 1, 2),
+    "version": (0, 2, 0),
     "blender": (2, 83, 0),
     "location": "View 3D > Toolshelf",
     "doc_url": "https://github.com/0w0-Yui/modtoolkit",
@@ -19,7 +19,6 @@ from bpy.types import (
     Panel,
     Menu,
     Scene,
-    Armature,
     Object,
 )
 from bpy.utils import register_class, unregister_class
@@ -41,7 +40,7 @@ class MY_UL_List(UIList):
     ):
         custom_icon = "FORWARD"
         mesh = bpy.data.objects[context.scene.mesh_pointer.name]
-        armature = bpy.data.armatures.get(context.scene.armature_pointer.name)
+        armature = bpy.data.objects[context.scene.armature_pointer.name].data
         layout.prop_search(item, "vg", mesh, "vertex_groups", text="")
         layout.label(text=item.name, icon=custom_icon)
         layout.prop_search(item, "bone", armature, "bones", text="")
@@ -136,48 +135,70 @@ class MyAddonPanel(Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
+        armature = scene.armature_pointer
+        mesh = scene.mesh_pointer
 
         box = layout.box()
         box.label(text="select an armature:")
-        box.prop(scene, "armature_pointer", text="")
+        box.prop(scene, "armature_pointer", text="", icon="ARMATURE_DATA")
         box.label(text="select a mesh:")
-        box.prop(scene, "mesh_pointer", text="")
+        box.prop(scene, "mesh_pointer", text="", icon="MESH_DATA")
 
-        row = box.row(align=True)
-        row.operator(StartAssign.bl_idname, text=StartAssign.bl_label)
-        row.operator(Stop.bl_idname, text=Stop.bl_label)
+        msg = Kit.check_pointer(mesh, armature)
 
-        box1 = layout.box()
+        if msg == "":
+            row = box.row(align=True)
+            row.operator(StartAssign.bl_idname, text=StartAssign.bl_label)
+            row.operator(Stop.bl_idname, text=Stop.bl_label)
 
-        box1.label(text=context.scene.vertex_group_string)
+            box1 = layout.box()
 
-        row = box1.row(align=True)
-        row.operator(Next.bl_idname, text=Next.bl_label)
-        row.operator(Skip.bl_idname, text=Skip.bl_label)
+            box1.label(text=context.scene.vertex_group_string)
 
-        row = box1.row()
-        row.template_list(
-            MY_UL_List.bl_idname, "The_List", scene, "my_list", scene, "list_index"
-        )
+            row = box1.row(align=True)
+            row.operator(Next.bl_idname, text=Next.bl_label)
+            row.operator(Skip.bl_idname, text=Skip.bl_label)
 
-        row1 = box1.row(align=True)
-        row1.operator(LIST_OT_NewItem.bl_idname, text=LIST_OT_NewItem.bl_label)
-        row1.operator(LIST_OT_DeleteItem.bl_idname, text=LIST_OT_DeleteItem.bl_label)
-        box1.operator(Done.bl_idname, text=Done.bl_label)
+            row = box1.row()
+            row.template_list(
+                MY_UL_List.bl_idname, "The_List", scene, "my_list", scene, "list_index"
+            )
 
-        box2 = layout.box()
-        row = box2.row()
-        row.menu(
-            menu_presets.__name__, text=menu_presets.bl_label, icon=menu_presets.bl_icon
-        )
-        row1 = box2.row(align=True)
-        row1.operator(add_presets.bl_idname, text="save")
-        row1.operator(add_presets.bl_idname, text="delete").remove_active = True
-        row1 = box2.row(align=True)
-        row1.operator(OpenPresetFolder.bl_idname, text=OpenPresetFolder.bl_label)
+            row1 = box1.row(align=True)
+            row1.operator(LIST_OT_NewItem.bl_idname, text=LIST_OT_NewItem.bl_label)
+            row1.operator(
+                LIST_OT_DeleteItem.bl_idname, text=LIST_OT_DeleteItem.bl_label
+            )
+            box1.operator(Done.bl_idname, text=Done.bl_label)
+
+            box2 = layout.box()
+            row = box2.row()
+            row.menu(
+                menu_presets.__name__,
+                text=menu_presets.bl_label,
+                icon=menu_presets.bl_icon,
+            )
+            row1 = box2.row(align=True)
+            row1.operator(add_presets.bl_idname, text="save")
+            row1.operator(add_presets.bl_idname, text="delete").remove_active = True
+            row1 = box2.row(align=True)
+            row1.operator(OpenPresetFolder.bl_idname, text=OpenPresetFolder.bl_label)
+        else:
+            layout.label(text=msg, icon="ERROR")
 
 
 class Kit(Operator):
+    def check_pointer(obj, armature):
+        if obj is None or armature is None:
+            return "no armature/mesh selected"
+        # 遍历每个修改器
+        for modifier in obj.modifiers:
+            # 判断修改器是否是骨骼修改器
+            if modifier.type == "ARMATURE":
+                if modifier.object == bpy.data.objects[armature.name]:
+                    return ""
+        return f'no modifier for "{armature.name}" found in "{obj.name}"'
+
     def add_armature_modifier(obj, armature):
         obj = bpy.context.selected_objects[0]
         # 遍历每个修改器
@@ -213,9 +234,12 @@ class Kit(Operator):
 
     def update_label_vg(context, string):
         context.scene.vertex_group_string = f"current vertex group: {string}"
-        
+
     def is_mesh(scene, obj):
-        return obj.type == 'MESH'
+        return obj.type == "MESH"
+
+    def is_armature(scene, obj):
+        return obj.type == "ARMATURE"
 
 
 class StartAssign(Operator):
@@ -238,6 +262,9 @@ class Next(Operator):
     bl_label = "next"
 
     def execute(self, context):
+        if bpy.context.object.mode != "WEIGHT_PAINT":
+            Kit.report("please enter weight paint mode")
+            return {"FINISHED"}
         selected_mesh = context.scene.mesh_pointer
         selected_bone = bpy.context.selected_pose_bones
         list = context.scene.my_list
@@ -266,6 +293,9 @@ class Skip(Operator):
     bl_label = "skip"
 
     def execute(self, context):
+        if bpy.context.object.mode != "WEIGHT_PAINT":
+            Kit.report("please enter weight paint mode")
+            return {"FINISHED"}
         selected_mesh = context.scene.mesh_pointer
         index = context.scene.assign_index
         vg_list = Kit.get_all_vg(selected_mesh)
@@ -298,6 +328,9 @@ class Done(Operator):
     bl_label = "rename"
 
     def execute(self, context):
+        if bpy.context.object.mode != "WEIGHT_PAINT":
+            Kit.report("please enter weight paint mode")
+            return {"FINISHED"}
         mesh = bpy.data.objects[context.scene.mesh_pointer.name]
         my_list = context.scene.my_list
         vg_list = Kit.get_all_vg(mesh)
@@ -363,7 +396,8 @@ class Done(Operator):
             bpy.ops.object.vertex_group_copy()
             vertex_groups[-1].name = new_name
             print(f"{old_name} -> {new_name} renamed")
-
+        Kit.report("done!")
+        print("done!")
         return {"FINISHED"}
 
 
@@ -389,7 +423,7 @@ def register():
     for cls in classes:
         register_class(cls)
 
-    Scene.armature_pointer = PointerProperty(type=Armature)
+    Scene.armature_pointer = PointerProperty(type=Object, poll=Kit.is_armature)
     Scene.mesh_pointer = PointerProperty(type=Object, poll=Kit.is_mesh)
     Scene.my_list = CollectionProperty(type=ListItem)
     Scene.list_index = IntProperty(name="list index", default=0)
