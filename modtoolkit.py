@@ -348,7 +348,7 @@ class Done(Operator):
                         new_name = f"{old_name}.old.{str(index).zfill(3)}"
                     if vertex_group is not None:
                         vertex_group.name = new_name
-                        print("{old_name} -> {new_name} renamed")
+                        print(f"{old_name} -> {new_name} renamed")
                     else:
                         print(f'No vertex group found with name "{old_name}"')
 
