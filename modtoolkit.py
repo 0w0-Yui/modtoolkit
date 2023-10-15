@@ -2,7 +2,7 @@ bl_info = {
     "name": "Yui's Modding Toolkit",
     "description": "Useful toolkit for modding",
     "author": "0w0-Yui <yui@lioat.cn>",
-    "version": (0, 2, 0),
+    "version": (0, 2, 1),
     "blender": (2, 83, 0),
     "location": "View 3D > Toolshelf",
     "doc_url": "https://github.com/0w0-Yui/modtoolkit",
@@ -247,9 +247,6 @@ class StartAssign(Operator):
     bl_label = "start assign"
 
     def execute(self, context):
-        if bpy.context.object.mode != "WEIGHT_PAINT":
-            Kit.report("please enter weight paint mode")
-            return {"FINISHED"}
         vg_list = []
         selected_mesh = context.scene.mesh_pointer
         print("start quick assign")
@@ -280,7 +277,7 @@ class Next(Operator):
             item = list.add()
             item.vg = vg_list[index]["name"]
             item.bone = selected_bone[0].name
-            print("{item.vg} -> {item.bone} added")
+            print(f"{item.vg} -> {item.bone} added")
             index += 1
         if index < len(vg_list):
             Kit.select_vg(vg_list[index]["name"])
@@ -303,7 +300,7 @@ class Skip(Operator):
         index = context.scene.assign_index
         vg_list = Kit.get_all_vg(selected_mesh)
         if index >= 0 and index < len(vg_list):
-            print("{item.vg} skipped")
+            print(f"{item.vg} skipped")
             index += 1
         if index < len(vg_list):
             Kit.select_vg(vg_list[index]["name"])
