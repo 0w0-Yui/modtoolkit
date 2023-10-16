@@ -2,7 +2,7 @@ bl_info = {
     "name": "Yui's Modding Toolkit",
     "description": "Useful toolkit for modding",
     "author": "0w0-Yui <yui@lioat.cn>",
-    "version": (0, 2, 1),
+    "version": (0, 3, 0),
     "blender": (2, 83, 0),
     "location": "View 3D > Toolshelf",
     "doc_url": "https://github.com/0w0-Yui/modtoolkit",
@@ -110,6 +110,68 @@ class CreditPanel(Panel):
         name = "0w0-Yui"
         op = layout.operator("wm.url_open", text=f"Github: {name}")
         op.url = "https://github.com/0w0-Yui"
+
+class RemoveUnused(Operator):
+    bl_label = "Remove All Unused Vertex Group for Active Mesh"
+    bl_idname = "misc.remove_unused"
+    
+    def execute(self, context):
+        object = bpy.context.object
+        skeleton = object.find_armature();
+        if object.type != "MESH":
+            Kit().report("no active mesh!")
+            return {"FINISHED"}
+        if skeleton != None:
+            Kit().report("no amature found for active mesh!")
+            return {"FINISHED"}
+        if object.type == 'MESH' and len(object.vertex_groups) > 0:
+            for vGroup in object.vertex_groups:
+                if skeleton.data.bones.get(vGroup.name) is None:
+                    print(f"{vGroup.name} removed")
+                    object.vertex_groups.remove(vGroup)
+        return {"FINISHED"}
+                     
+
+class RemoveEmpty(Operator):
+    bl_label = "Remove All Empty Vertex Group for Active Mesh"
+    bl_idname = "misc.remove_empty"
+    
+    def execute(self, context):
+        obj = bpy.context.object
+        if obj.type != "MESH":
+            Kit().report("no active mesh!")
+            return {"FINISHED"}
+        try:
+            vertex_groups = obj.vertex_groups
+            groups = {r : None for r in range(len(vertex_groups))}
+
+            for vert in obj.data.vertices:
+                for vg in vert.groups:
+                    i = vg.group
+                    if i in groups:
+                        del groups[i]
+
+            lis = [k for k in groups]
+            lis.sort(reverse=True)
+            for i in lis:
+                print(f"{vertex_groups[i].name} removed")
+                vertex_groups.remove(vertex_groups[i])
+        except:
+            pass   
+        return {"FINISHED"}
+    
+
+class MiscPanel(Panel):
+    bl_label = "Misc"
+    bl_idname = "OBJECT_PT_misc"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "YuiのModToolkit"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator(RemoveEmpty.bl_idname, text=RemoveEmpty.bl_label)
+        layout.operator(RemoveUnused.bl_idname, text=RemoveUnused.bl_label)
 
 
 class OpenPresetFolder(Operator):
@@ -412,10 +474,13 @@ classes = (
     LIST_OT_DeleteItem,
     menu_presets,
     add_presets,
+    RemoveUnused,
+    RemoveEmpty,
+    MiscPanel,
     CreditPanel,
     OpenPresetFolder,
     Stop,
-    Skip,
+    Skip
 )
 
 
