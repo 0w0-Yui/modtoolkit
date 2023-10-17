@@ -2,7 +2,7 @@ bl_info = {
     "name": "Yui's Modding Toolkit",
     "description": "Useful toolkit for modding",
     "author": "0w0-Yui <yui@lioat.cn>",
-    "version": (0, 3, 0),
+    "version": (0, 3, 1),
     "blender": (2, 83, 0),
     "location": "View 3D > Toolshelf",
     "doc_url": "https://github.com/0w0-Yui/modtoolkit",
@@ -410,9 +410,9 @@ class Done(Operator):
                         new_name = f"{old_name}.old.{str(index).zfill(3)}"
                     if vertex_group is not None:
                         vertex_group.name = new_name
-                        print(f"{old_name} -> {new_name} renamed")
+                        print(f"{[old_name]} -> {new_name} renamed")
                     else:
-                        print(f'No vertex group found with name "{old_name}"')
+                        print(f'No vertex group found with name "{[old_name]}"')
 
         duplicates_dict = {}
         for i, item in enumerate(my_list):
@@ -423,7 +423,7 @@ class Done(Operator):
 
         # 从字典中提取出所有重复的键值对，即重复的bone属性的值和它们的位置
         duplicates = [[k, v] for k, v in duplicates_dict.items() if len(v) > 1]
-
+        
         for dup in duplicates:
             merged_group_name = dup[0]
             my_list_index = dup[1]
@@ -431,19 +431,23 @@ class Done(Operator):
             for i in my_list_index:
                 vertex_group_names.append(my_list[i].vg)
             vertex_group = mesh.vertex_groups.new(name=merged_group_name)
-
-            for id, vert in enumerate(mesh.data.vertices):
-                available_groups = [v_group_elem.group for v_group_elem in vert.groups]
-                weights = []
-                for vertex_group_name in vertex_group_names:
-                    if mesh.vertex_groups[vertex_group_name].index in available_groups:
-                        weights.append(mesh.vertex_groups[vertex_group_name].weight(id))
-                print(f"{vertex_group_names} -> {merged_group_name} renamed with merge")
-                sum = 0
-                for num in weights:
-                    sum += num
-                if sum > 0:
-                    vertex_group.add([id], sum, "REPLACE")
+            
+            vertex_weights = {}
+            for vert in mesh.data.vertices:
+                if len(vert.groups):  
+                    for item in vert.groups:
+                        vg = mesh.vertex_groups[item.group]
+                        if vg.name in vertex_group_names:
+                            if vert.index in vertex_weights:    
+                                vertex_weights[vert.index] += vg.weight(vert.index)
+                            else:
+                                vertex_weights[vert.index] = vg.weight(vert.index)
+                            if (vertex_weights[vert.index] > 1.0): 
+                                vertex_weights[vert.index] = 1.0
+    
+            # add the values to the group                       
+            for key, value in vertex_weights.items():
+                vertex_group.add([key], value ,'REPLACE') #'ADD','SUBTRACT'
 
         for item in my_list:
             is_dup = False
@@ -457,7 +461,7 @@ class Done(Operator):
             Kit.select_vg(old_name)
             bpy.ops.object.vertex_group_copy()
             vertex_groups[-1].name = new_name
-            print(f"{old_name} -> {new_name} renamed")
+            print(f"{[old_name]} -> {new_name} renamed")
         Kit.report("done!")
         print("done!")
         return {"FINISHED"}
