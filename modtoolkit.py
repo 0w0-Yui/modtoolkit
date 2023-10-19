@@ -2,7 +2,7 @@ bl_info = {
     "name": "Yui's Modding Toolkit",
     "description": "Useful toolkit for modding",
     "author": "0w0-Yui <yui@lioat.cn>",
-    "version": (0, 3, 1),
+    "version": (0, 4, 0),
     "blender": (2, 83, 0),
     "location": "View 3D > Toolshelf",
     "doc_url": "https://github.com/0w0-Yui/modtoolkit",
@@ -49,6 +49,7 @@ class MY_UL_List(UIList):
 class LIST_OT_NewItem(Operator):
     bl_idname = "my_list.new_item"
     bl_label = "add"
+    bl_description = "Add an item from list"
 
     def execute(self, context):
         context.scene.my_list.add()
@@ -59,6 +60,7 @@ class LIST_OT_NewItem(Operator):
 class LIST_OT_DeleteItem(Operator):
     bl_idname = "my_list.delete_item"
     bl_label = "remove"
+    bl_description = "Remove an item from list"
 
     @classmethod
     def poll(cls, context):
@@ -77,6 +79,7 @@ class LIST_OT_DeleteItem(Operator):
 class menu_presets(Menu):
     bl_label = "presets"
     bl_icon = "PRESET"
+    
     preset_subdir = "yuinomodtools"
     preset_operator = "script.execute_preset"
     draw = Menu.draw_preset
@@ -85,7 +88,7 @@ class menu_presets(Menu):
 class add_presets(AddPresetBase, Operator):
     bl_idname = "menu.add_preset"
     bl_label = "Add Preset"
-    bl_description = "Add Preset"
+    bl_description = "Save or delete preset from local"
     preset_menu = "menu_presets"
 
     # variable used for all preset values
@@ -112,8 +115,9 @@ class CreditPanel(Panel):
         op.url = "https://github.com/0w0-Yui"
 
 class RemoveUnused(Operator):
-    bl_label = "Remove All Unused Vertex Group for Active Mesh"
+    bl_label = "Remove Unused VG"
     bl_idname = "misc.remove_unused"
+    bl_description = "Remove all unused vertex group for active mesh"
     
     def execute(self, context):
         object = bpy.context.object
@@ -133,8 +137,9 @@ class RemoveUnused(Operator):
                      
 
 class RemoveEmpty(Operator):
-    bl_label = "Remove All Empty Vertex Group for Active Mesh"
+    bl_label = "Remove Empty VG"
     bl_idname = "misc.remove_empty"
+    bl_description = "Remove all empty vertex group for active mesh"
     
     def execute(self, context):
         obj = bpy.context.object
@@ -159,7 +164,68 @@ class RemoveEmpty(Operator):
         except:
             pass   
         return {"FINISHED"}
+
+class MergeTextureMaterial(Operator):
+    bl_label = "Auto Merge Mats"
+    bl_idname = "misc.merge_same_mat"
+    bl_description = "Merge materials with same texture for active mesh"
     
+    def execute(self, context): 
+        obj = bpy.context.object
+        mat_dict = {}
+        if obj.type == "MESH":
+            for mat_slot in obj.material_slots:
+                if mat_slot.material:
+                    if mat_slot.material.node_tree:
+                        # print("material:" + str(mat_slot.material.name))                
+                        for x in mat_slot.material.node_tree.nodes:
+                            if x.type=='TEX_IMAGE':
+                                # print(" texture: "+str(x.image.name))
+                                if mat_slot.slot_index in mat_dict:
+                                    mat_dict[mat_slot.slot_index].append(x.image.name)
+                                else:
+                                    mat_dict[mat_slot.slot_index] = [x.image.name]
+        # print(mat_dict)
+        flipped = {}
+        for key, value in mat_dict.items():
+            value = tuple(value)
+            value = tuple([item for index, item in enumerate(value) if item not in value[:index]])
+            if value not in flipped:
+                flipped[value] = [key]
+            else:
+                flipped[value].append(key)
+                
+        # print(flipped)
+        # print(flipped.items())
+        
+        data_face = {}
+        
+        print("getting polygons data")
+        polygons = obj.data.polygons
+        for f in polygons:
+            index_face = f
+            index_mat = f.material_index
+            if index_mat in data_face:
+                data_face[index_mat].append(index_face)
+            else:
+                data_face[index_mat] = [index_face]
+            # print("face", f.index, "material_index", f.material_index)
+            
+        # print(data_face)
+        print(flipped)
+        # return {"FINISHED"}
+        
+        for key, value in flipped.items():
+            # print(key,value)
+            for index in value[1:]:
+                print(f"{index} merge into {value[0]}")
+                # continue
+                for face in data_face[index]:
+                    # print(faces)
+                    face.material_index = value[0]
+        bpy.ops.object.material_slot_remove_unused()       
+                
+        return {"FINISHED"}
 
 class MiscPanel(Panel):
     bl_label = "Misc"
@@ -172,11 +238,13 @@ class MiscPanel(Panel):
         layout = self.layout
         layout.operator(RemoveEmpty.bl_idname, text=RemoveEmpty.bl_label)
         layout.operator(RemoveUnused.bl_idname, text=RemoveUnused.bl_label)
+        layout.operator(MergeTextureMaterial.bl_idname, text=MergeTextureMaterial.bl_label)
 
 
 class OpenPresetFolder(Operator):
     bl_idname = "menu.open_preset_folder"
     bl_label = "open presets folder"
+    bl_description = "Open presets folder in the explorer"
 
     def execute(self, context):
         os.system(
@@ -307,6 +375,7 @@ class Kit(Operator):
 class StartAssign(Operator):
     bl_idname = "object.start_assignment"
     bl_label = "start assign"
+    bl_description = "Start assign bones' name to vertex groups"
 
     def execute(self, context):
         vg_list = []
@@ -322,6 +391,7 @@ class StartAssign(Operator):
 class Next(Operator):
     bl_idname = "object.next"
     bl_label = "next"
+    bl_description = "Add current selected bones and vertex group to rename list"
 
     def execute(self, context):
         if bpy.context.object.mode != "WEIGHT_PAINT":
@@ -353,6 +423,7 @@ class Next(Operator):
 class Skip(Operator):
     bl_idname = "object.skip"
     bl_label = "skip"
+    bl_description = "Skip current bone"
 
     def execute(self, context):
         if bpy.context.object.mode != "WEIGHT_PAINT":
@@ -376,6 +447,7 @@ class Skip(Operator):
 class Stop(Operator):
     bl_idname = "object.stop"
     bl_label = "reset assign"
+    bl_description = "Stop and reset the assign process"
 
     def execute(self, context):
         index = 0
@@ -388,6 +460,7 @@ class Stop(Operator):
 class Done(Operator):
     bl_idname = "object.done"
     bl_label = "rename"
+    bl_description = "Start rename for the current rename list"
 
     def execute(self, context):
         if bpy.context.object.mode != "WEIGHT_PAINT":
@@ -480,6 +553,7 @@ classes = (
     add_presets,
     RemoveUnused,
     RemoveEmpty,
+    MergeTextureMaterial,
     MiscPanel,
     CreditPanel,
     OpenPresetFolder,
