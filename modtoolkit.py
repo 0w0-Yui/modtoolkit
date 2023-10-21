@@ -2,7 +2,7 @@ bl_info = {
     "name": "Yui's Modding Toolkit",
     "description": "Useful toolkit for modding",
     "author": "0w0-Yui <yui@lioat.cn>",
-    "version": (0, 4, 0),
+    "version": (0, 4, 1),
     "blender": (2, 83, 0),
     "location": "View 3D > Toolshelf",
     "doc_url": "https://github.com/0w0-Yui/modtoolkit",
@@ -79,7 +79,7 @@ class LIST_OT_DeleteItem(Operator):
 class menu_presets(Menu):
     bl_label = "presets"
     bl_icon = "PRESET"
-    
+
     preset_subdir = "yuinomodtools"
     preset_operator = "script.execute_preset"
     draw = Menu.draw_preset
@@ -114,33 +114,34 @@ class CreditPanel(Panel):
         op = layout.operator("wm.url_open", text=f"Github: {name}")
         op.url = "https://github.com/0w0-Yui"
 
+
 class RemoveUnused(Operator):
     bl_label = "Remove Unused VG"
     bl_idname = "misc.remove_unused"
     bl_description = "Remove all unused vertex group for active mesh"
-    
+
     def execute(self, context):
         object = bpy.context.object
-        skeleton = object.find_armature();
+        skeleton = object.find_armature()
         if object.type != "MESH":
             Kit().report("no active mesh!")
             return {"FINISHED"}
-        if skeleton != None:
+        if skeleton is not None:
             Kit().report("no amature found for active mesh!")
             return {"FINISHED"}
-        if object.type == 'MESH' and len(object.vertex_groups) > 0:
+        if object.type == "MESH" and len(object.vertex_groups) > 0:
             for vGroup in object.vertex_groups:
                 if skeleton.data.bones.get(vGroup.name) is None:
                     print(f"{vGroup.name} removed")
                     object.vertex_groups.remove(vGroup)
         return {"FINISHED"}
-                     
+
 
 class RemoveEmpty(Operator):
     bl_label = "Remove Empty VG"
     bl_idname = "misc.remove_empty"
     bl_description = "Remove all empty vertex group for active mesh"
-    
+
     def execute(self, context):
         obj = bpy.context.object
         if obj.type != "MESH":
@@ -148,7 +149,7 @@ class RemoveEmpty(Operator):
             return {"FINISHED"}
         try:
             vertex_groups = obj.vertex_groups
-            groups = {r : None for r in range(len(vertex_groups))}
+            groups = {r: None for r in range(len(vertex_groups))}
 
             for vert in obj.data.vertices:
                 for vg in vert.groups:
@@ -161,25 +162,26 @@ class RemoveEmpty(Operator):
             for i in lis:
                 print(f"{vertex_groups[i].name} removed")
                 vertex_groups.remove(vertex_groups[i])
-        except:
-            pass   
+        except Exception as e:
+            print(e)
         return {"FINISHED"}
+
 
 class MergeTextureMaterial(Operator):
     bl_label = "Auto Merge Mats"
     bl_idname = "misc.merge_same_mat"
     bl_description = "Merge materials with same texture for active mesh"
-    
-    def execute(self, context): 
+
+    def execute(self, context):
         obj = bpy.context.object
         mat_dict = {}
         if obj.type == "MESH":
             for mat_slot in obj.material_slots:
                 if mat_slot.material:
                     if mat_slot.material.node_tree:
-                        # print("material:" + str(mat_slot.material.name))                
+                        # print("material:" + str(mat_slot.material.name))
                         for x in mat_slot.material.node_tree.nodes:
-                            if x.type=='TEX_IMAGE':
+                            if x.type == "TEX_IMAGE":
                                 # print(" texture: "+str(x.image.name))
                                 if mat_slot.slot_index in mat_dict:
                                     mat_dict[mat_slot.slot_index].append(x.image.name)
@@ -189,17 +191,19 @@ class MergeTextureMaterial(Operator):
         flipped = {}
         for key, value in mat_dict.items():
             value = tuple(value)
-            value = tuple([item for index, item in enumerate(value) if item not in value[:index]])
+            value = tuple(
+                [item for index, item in enumerate(value) if item not in value[:index]]
+            )
             if value not in flipped:
                 flipped[value] = [key]
             else:
                 flipped[value].append(key)
-                
+
         # print(flipped)
         # print(flipped.items())
-        
+
         data_face = {}
-        
+
         print("getting polygons data")
         polygons = obj.data.polygons
         for f in polygons:
@@ -210,11 +214,11 @@ class MergeTextureMaterial(Operator):
             else:
                 data_face[index_mat] = [index_face]
             # print("face", f.index, "material_index", f.material_index)
-            
+
         # print(data_face)
         print(flipped)
         # return {"FINISHED"}
-        
+
         for key, value in flipped.items():
             # print(key,value)
             for index in value[1:]:
@@ -223,9 +227,25 @@ class MergeTextureMaterial(Operator):
                 for face in data_face[index]:
                     # print(faces)
                     face.material_index = value[0]
-        bpy.ops.object.material_slot_remove_unused()       
-                
+        bpy.ops.object.material_slot_remove_unused()
+
         return {"FINISHED"}
+
+
+class SelectSeams(Operator):
+    bl_label = "Select Seams"
+    bl_idname = "misc.select_seams"
+    bl_description = "Select edges marked as seams for active mesh"
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        if obj.type != "MESH":
+            Kit().report("Active object is not a mesh")
+            return {"FINISHED"}
+        for e in obj.data.edges:
+            e.select = e.use_seam
+        return {"FINISHED"}
+
 
 class MiscPanel(Panel):
     bl_label = "Misc"
@@ -238,7 +258,10 @@ class MiscPanel(Panel):
         layout = self.layout
         layout.operator(RemoveEmpty.bl_idname, text=RemoveEmpty.bl_label)
         layout.operator(RemoveUnused.bl_idname, text=RemoveUnused.bl_label)
-        layout.operator(MergeTextureMaterial.bl_idname, text=MergeTextureMaterial.bl_label)
+        layout.operator(
+            MergeTextureMaterial.bl_idname, text=MergeTextureMaterial.bl_label
+        )
+        layout.operator(SelectSeams.bl_idname, text=SelectSeams.bl_label)
 
 
 class OpenPresetFolder(Operator):
@@ -247,11 +270,7 @@ class OpenPresetFolder(Operator):
     bl_description = "Open presets folder in the explorer"
 
     def execute(self, context):
-        os.system(
-            "explorer "
-            + bpy.utils.resource_path("USER")
-            + "\\scripts\\presets\\yuinomodtools"
-        )
+        os.system("explorer " + bpy.utils.resource_path("USER") + "\\scripts\\presets\\yuinomodtools")
         return {"FINISHED"}
 
 
@@ -433,7 +452,8 @@ class Skip(Operator):
         index = context.scene.assign_index
         vg_list = Kit.get_all_vg(selected_mesh)
         if index >= 0 and index < len(vg_list):
-            print(f"{item.vg} skipped")
+            name = vg_list[index]["name"]
+            print(f"{name} skipped")
             index += 1
         if index < len(vg_list):
             Kit.select_vg(vg_list[index]["name"])
@@ -496,7 +516,7 @@ class Done(Operator):
 
         # 从字典中提取出所有重复的键值对，即重复的bone属性的值和它们的位置
         duplicates = [[k, v] for k, v in duplicates_dict.items() if len(v) > 1]
-        
+
         for dup in duplicates:
             merged_group_name = dup[0]
             my_list_index = dup[1]
@@ -504,23 +524,23 @@ class Done(Operator):
             for i in my_list_index:
                 vertex_group_names.append(my_list[i].vg)
             vertex_group = mesh.vertex_groups.new(name=merged_group_name)
-            
+
             vertex_weights = {}
             for vert in mesh.data.vertices:
-                if len(vert.groups):  
+                if len(vert.groups):
                     for item in vert.groups:
                         vg = mesh.vertex_groups[item.group]
                         if vg.name in vertex_group_names:
-                            if vert.index in vertex_weights:    
+                            if vert.index in vertex_weights:
                                 vertex_weights[vert.index] += vg.weight(vert.index)
                             else:
                                 vertex_weights[vert.index] = vg.weight(vert.index)
-                            if (vertex_weights[vert.index] > 1.0): 
+                            if vertex_weights[vert.index] > 1.0:
                                 vertex_weights[vert.index] = 1.0
-    
-            # add the values to the group                       
+
+            # add the values to the group
             for key, value in vertex_weights.items():
-                vertex_group.add([key], value ,'REPLACE') #'ADD','SUBTRACT'
+                vertex_group.add([key], value, "REPLACE")  # 'ADD','SUBTRACT'
 
         for item in my_list:
             is_dup = False
@@ -554,11 +574,12 @@ classes = (
     RemoveUnused,
     RemoveEmpty,
     MergeTextureMaterial,
+    SelectSeams,
     MiscPanel,
     CreditPanel,
     OpenPresetFolder,
     Stop,
-    Skip
+    Skip,
 )
 
 
