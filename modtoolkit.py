@@ -242,6 +242,7 @@ class SelectSeams(Operator):
         if obj.type != "MESH":
             Kit().report("Active object is not a mesh")
             return {"FINISHED"}
+        bpy.ops.object.mode_set(mode = 'OBJECT')
         for e in obj.data.edges:
             e.select = e.use_seam
         return {"FINISHED"}
