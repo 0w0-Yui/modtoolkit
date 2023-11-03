@@ -2,7 +2,7 @@ bl_info = {
     "name": "Yui's Modding Toolkit",
     "description": "Useful toolkit for modding",
     "author": "0w0-Yui <yui@lioat.cn>",
-    "version": (0, 4, 1),
+    "version": (0, 5, 0),
     "blender": (2, 83, 0),
     "location": "View 3D > Toolshelf",
     "doc_url": "https://github.com/0w0-Yui/modtoolkit",
@@ -26,14 +26,141 @@ from bl_operators.presets import AddPresetBase
 import os
 
 
+class Localization:
+    localizations = {
+        "en": {
+            # pointer panel
+            "mainpanel.label": "Vertex Group Rename Tool",
+            "mainpanel.armature_pointer": "select an armature:",
+            "mainpanel.mesh_pointer": "select a mesh:",
+            "mainpanel.start_assignment": "start assign",
+            "mainpanel.start_assignment.tip": "Start assign bones' name to vertex groups",
+            "mainpanel.stop": "reset assign",
+            "mainpanel.stop.tip": "Stop and reset the assign process",
+            # vertex group assignment panel
+            "mainpanel.vertex_group_string": "current vertex group: ",
+            "mainpanel.next": "next",
+            "mainpanel.next.tip": "Add current selected bones and vertex group to rename list",
+            "mainpanel.skip": "skip",
+            "mainpanel.skip.tip": "Skip assignment for current bone",
+            "ul_list.vg.tip": "vertex group name",
+            "ul_list.bone.tip": "target bone name",
+            "my_list.new_item": "add",
+            "my_list.new_item.tip": "Add an item from list",
+            "my_list.delete_item": "remove",
+            "my_list.delete_item.tip": "Remove an item from list",
+            "mainpanel.done": "start rename",
+            "mainpanel.done.tip": "Start rename for the current rename list",
+            # presets panel
+            "mainpanel.presets": "presets",
+            "presets.save": "save",
+            "presets.delete": "delete",
+            "presets.tip": "Save or delete preset from local",
+            "presets.open_folder": "open presets folder",
+            "presets.open_folder.tip": "Open presets folder in the explorer",
+            # misc panel
+            "miscpanel.label": "Misc",
+            "miscpanel.remove_empty": "Remove Empty VG",
+            "miscpanel.remove_empty.tip": "Remove all empty vertex group for active mesh",
+            "miscpanel.remove_unused": "Remove Unused VG",
+            "miscpanel.remove_unused.tip": "Remove all unused vertex group for active mesh",
+            "miscpanel.merge_mats": "Auto Merge Mats",
+            "miscpanel.merge_mats.tip": "Merge materials with same texture for active mesh",
+            "miscpanel.select_seams": "Select Seams",
+            "miscpanel.select_seams.tip": "Select edges marked as seams for active mesh",
+            # credit panel
+            "creditpanel.label": "Credit",
+            "creditpanel.github": "Github: 0w0-Yui",
+            "creditpanel.bilibili": "bilibili: 0w0-Yui",
+            # report
+            "report.no_active_mesh": "no active mesh!",
+            "report.no_active_bone": "no bone selected",
+            "report.no_active": "no armature/mesh selected",
+            "report.no_armature": "no amature found for active mesh!",
+            "report.active_not_mesh": "active object is not a mesh!",
+            "report.not_weight_mode": "please enter weight paint mode!",
+            "report.name_collision": "name collision found, details see command prompt!",
+            "report.done": "done!",
+        },
+        "zh": {
+            # pointer panel
+            "mainpanel.label": "顶点组重命名工具",
+            "mainpanel.armature_pointer": "选择目标骨架:",
+            "mainpanel.mesh_pointer": "选择目标模型:",
+            "mainpanel.start_assignment": "开始指定",
+            "mainpanel.start_assignment.tip": "开始将骨骼名称指定给顶点组",
+            "mainpanel.stop": "重置指定",
+            "mainpanel.stop.tip": "停止并重置指定流程",
+            # vertex group assignment panel
+            "mainpanel.vertex_group_string": "当前顶点组: ",
+            "mainpanel.next": "下一个",
+            "mainpanel.next.tip": "添加当前选中骨骼和顶点组到重命名列表并选择下一个顶点组",
+            "mainpanel.skip": "跳过",
+            "mainpanel.skip.tip": "跳过当前顶点组指定",
+            "ul_list.vg.tip": "顶点组名称",
+            "ul_list.bone.tip": "目标骨骼名称",
+            "my_list.new_item": "添加",
+            "my_list.new_item.tip": "添加一个重命名列表项",
+            "my_list.delete_item": "删除",
+            "my_list.delete_item.tip": "删除选中重命名列表项",
+            "mainpanel.done": "开始重命名",
+            "mainpanel.done.tip": "根据当前重命名列表开始批量重命名顶点组",
+            # presets panel
+            "mainpanel.presets": "重命名列表预设",
+            "presets.save": "保存",
+            "presets.delete": "删除",
+            "presets.tip": "保存或删除当前重命名列表预设",
+            "presets.open_folder": "打开预设文件夹",
+            "presets.open_folder.tip": "用资源管理器打开预设存储文件夹",
+            # misc panel
+            "miscpanel.label": "杂项",
+            "miscpanel.remove_empty": "移除空顶点组",
+            "miscpanel.remove_empty.tip": "为选中模型移除空顶点组",
+            "miscpanel.remove_unused": "移除未使用顶点组",
+            "miscpanel.remove_unused.tip": "根据选中模型的骨架修改器移除未使用的顶点组",
+            "miscpanel.merge_mats": "自动合并材质",
+            "miscpanel.merge_mats.tip": "遍历选中模型材质列表并合并相同贴图项",
+            "miscpanel.select_seams": "选中缝合边",
+            "miscpanel.select_seams.tip": "选中当前模型缝合边",
+            # credit panel
+            "creditpanel.label": "作者",
+            "creditpanel.github": "Github: 0w0-Yui",
+            "creditpanel.bilibili": "B站: 0w0-Yui",
+            # report
+            "report.no_active_mesh": "未选中模型",
+            "report.no_active_bone": "未选中骨骼",
+            "report.no_active": "未选中骨架或模型",
+            "report.no_armature": "选中骨骼未找到正确的骨架修改器",
+            "report.active_not_mesh": "选中物体不是模型",
+            "report.not_weight_mode": "请进入权重模式",
+            "report.name_collision": "名字冲突, 详情见控制台输出",
+            "report.done": "完成! ",
+        },
+    }
+
+    def get_localization(context):
+        lang = None
+        current = context.preferences.view.language
+        if current == "zh_CN" or current == "zh_TW":
+            lang = Localization.localizations["zh"]
+        else:
+            lang = Localization.localizations["en"]
+        return lang
+
+
+LANG = Localization.get_localization(bpy.context)
+
+
 class ListItem(PropertyGroup):
-    vg: StringProperty(name="vg", description="vertex group name", default="")
-    bone: StringProperty(name="bone", description="target bone name", default="")
+    vg_tip = LANG["ul_list.vg.tip"]
+    bone_tip = LANG["ul_list.bone.tip"]
+
+    vg: StringProperty(name="vg", description=vg_tip, default="")
+    bone: StringProperty(name="bone", description=bone_tip, default="")
 
 
 class MY_UL_List(UIList):
-    bl_idname = "MY_UL_List"
-    bl_label = ""
+    bl_idname = "mainpanel.ul_list"
 
     def draw_item(
         self, context, layout, data, item, icon, active_data, active_propname, index
@@ -48,8 +175,8 @@ class MY_UL_List(UIList):
 
 class LIST_OT_NewItem(Operator):
     bl_idname = "my_list.new_item"
-    bl_label = "add"
-    bl_description = "Add an item from list"
+    bl_label = LANG[bl_idname]
+    bl_description = LANG[bl_idname + ".tip"]
 
     def execute(self, context):
         context.scene.my_list.add()
@@ -59,8 +186,8 @@ class LIST_OT_NewItem(Operator):
 
 class LIST_OT_DeleteItem(Operator):
     bl_idname = "my_list.delete_item"
-    bl_label = "remove"
-    bl_description = "Remove an item from list"
+    bl_label = LANG[bl_idname]
+    bl_description = LANG[bl_idname + ".tip"]
 
     @classmethod
     def poll(cls, context):
@@ -77,7 +204,8 @@ class LIST_OT_DeleteItem(Operator):
 
 
 class menu_presets(Menu):
-    bl_label = "presets"
+    bl_idname = "mainpanel.presets"
+    bl_label = LANG[bl_idname]
     bl_icon = "PRESET"
 
     preset_subdir = "yuinomodtools"
@@ -86,9 +214,10 @@ class menu_presets(Menu):
 
 
 class add_presets(AddPresetBase, Operator):
-    bl_idname = "menu.add_preset"
-    bl_label = "Add Preset"
-    bl_description = "Save or delete preset from local"
+    bl_idname = "presets.tip"
+    bl_sub_idname = "presets"
+    bl_label = ""
+    bl_description = LANG[bl_idname]
     preset_menu = "menu_presets"
 
     # variable used for all preset values
@@ -102,8 +231,8 @@ class add_presets(AddPresetBase, Operator):
 
 
 class CreditPanel(Panel):
-    bl_label = "Credit"
-    bl_idname = "OBJECT_PT_credit"
+    bl_idname = "creditpanel"
+    bl_label = LANG[bl_idname + ".label"]
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "YuiのModToolkit"
@@ -113,21 +242,23 @@ class CreditPanel(Panel):
         name = "0w0-Yui"
         op = layout.operator("wm.url_open", text=f"Github: {name}")
         op.url = "https://github.com/0w0-Yui"
+        op1 = layout.operator("wm.url_open", text=f"Github: {name}")
+        op1.url = "https://space.bilibili.com/276237700"
 
 
 class RemoveUnused(Operator):
-    bl_label = "Remove Unused VG"
-    bl_idname = "misc.remove_unused"
-    bl_description = "Remove all unused vertex group for active mesh"
+    bl_idname = "miscpanel.remove_unused"
+    bl_label = LANG[bl_idname]
+    bl_description = LANG[bl_idname + ".tip"]
 
     def execute(self, context):
         object = bpy.context.object
         skeleton = object.find_armature()
         if object.type != "MESH":
-            Kit().report("no active mesh!")
+            Kit.report(LANG["report.no_active_mesh"])
             return {"FINISHED"}
         if skeleton is not None:
-            Kit().report("no amature found for active mesh!")
+            Kit.report(LANG["report.no_armature"])
             return {"FINISHED"}
         if object.type == "MESH" and len(object.vertex_groups) > 0:
             for vGroup in object.vertex_groups:
@@ -138,14 +269,14 @@ class RemoveUnused(Operator):
 
 
 class RemoveEmpty(Operator):
-    bl_label = "Remove Empty VG"
-    bl_idname = "misc.remove_empty"
-    bl_description = "Remove all empty vertex group for active mesh"
+    bl_idname = "miscpanel.remove_empty"
+    bl_label = LANG[bl_idname]
+    bl_description = LANG[bl_idname + ".tip"]
 
     def execute(self, context):
         obj = bpy.context.object
         if obj.type != "MESH":
-            Kit().report("no active mesh!")
+            Kit.report(LANG["report.no_active_mesh"])
             return {"FINISHED"}
         try:
             vertex_groups = obj.vertex_groups
@@ -168,9 +299,9 @@ class RemoveEmpty(Operator):
 
 
 class MergeTextureMaterial(Operator):
-    bl_label = "Auto Merge Mats"
-    bl_idname = "misc.merge_same_mat"
-    bl_description = "Merge materials with same texture for active mesh"
+    bl_idname = "miscpanel.merge_mats"
+    bl_label = LANG[bl_idname]
+    bl_description = LANG[bl_idname + ".tip"]
 
     def execute(self, context):
         obj = bpy.context.object
@@ -216,7 +347,7 @@ class MergeTextureMaterial(Operator):
             # print("face", f.index, "material_index", f.material_index)
 
         # print(data_face)
-        print(flipped)
+        # print(flipped)
         # return {"FINISHED"}
 
         for key, value in flipped.items():
@@ -233,24 +364,24 @@ class MergeTextureMaterial(Operator):
 
 
 class SelectSeams(Operator):
-    bl_label = "Select Seams"
-    bl_idname = "misc.select_seams"
-    bl_description = "Select edges marked as seams for active mesh"
+    bl_idname = "miscpanel.select_seams"
+    bl_label = LANG[bl_idname]
+    bl_description = LANG[bl_idname + ".tip"]
 
     def execute(self, context):
         obj = bpy.context.active_object
         if obj.type != "MESH":
-            Kit().report("Active object is not a mesh")
+            Kit.report(LANG["report.active_not_mesh"])
             return {"FINISHED"}
-        bpy.ops.object.mode_set(mode = 'OBJECT')
+        bpy.ops.object.mode_set(mode="OBJECT")
         for e in obj.data.edges:
             e.select = e.use_seam
         return {"FINISHED"}
 
 
 class MiscPanel(Panel):
-    bl_label = "Misc"
-    bl_idname = "OBJECT_PT_misc"
+    bl_idname = "miscpanel"
+    bl_label = LANG[bl_idname + ".label"]
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "YuiのModToolkit"
@@ -266,18 +397,22 @@ class MiscPanel(Panel):
 
 
 class OpenPresetFolder(Operator):
-    bl_idname = "menu.open_preset_folder"
-    bl_label = "open presets folder"
-    bl_description = "Open presets folder in the explorer"
+    bl_idname = "presets.open_folder"
+    bl_label = LANG[bl_idname]
+    bl_description = LANG[bl_idname + ".tip"]
 
     def execute(self, context):
-        os.system("explorer " + bpy.utils.resource_path("USER") + "\\scripts\\presets\\yuinomodtools")
+        os.system(
+            "explorer "
+            + bpy.utils.resource_path("USER")
+            + "\\scripts\\presets\\yuinomodtools"
+        )
         return {"FINISHED"}
 
 
 class MyAddonPanel(Panel):
-    bl_label = "Vertex Group Rename Tool"
-    bl_idname = "OBJECT_PT_my_addon"
+    bl_idname = "mainpanel"
+    bl_label = LANG[bl_idname + ".label"]
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "YuiのModToolkit"
@@ -289,9 +424,9 @@ class MyAddonPanel(Panel):
         mesh = scene.mesh_pointer
 
         box = layout.box()
-        box.label(text="select an armature:")
+        box.label(text=LANG[self.bl_idname + ".armature_pointer"])
         box.prop(scene, "armature_pointer", text="", icon="ARMATURE_DATA")
-        box.label(text="select a mesh:")
+        box.label(text=LANG[self.bl_idname + ".mesh_pointer"])
         box.prop(scene, "mesh_pointer", text="", icon="MESH_DATA")
 
         msg = Kit.check_pointer(mesh, armature)
@@ -324,13 +459,17 @@ class MyAddonPanel(Panel):
             box2 = layout.box()
             row = box2.row()
             row.menu(
-                menu_presets.__name__,
+                menu_presets.bl_idname,
                 text=menu_presets.bl_label,
                 icon=menu_presets.bl_icon,
             )
             row1 = box2.row(align=True)
-            row1.operator(add_presets.bl_idname, text="save")
-            row1.operator(add_presets.bl_idname, text="delete").remove_active = True
+            row1.operator(
+                add_presets.bl_idname, text=LANG[add_presets.bl_sub_idname + ".save"]
+            )
+            row1.operator(
+                add_presets.bl_idname, text=LANG[add_presets.bl_sub_idname + ".delete"]
+            ).remove_active = True
             row1 = box2.row(align=True)
             row1.operator(OpenPresetFolder.bl_idname, text=OpenPresetFolder.bl_label)
         else:
@@ -340,7 +479,7 @@ class MyAddonPanel(Panel):
 class Kit(Operator):
     def check_pointer(obj, armature):
         if obj is None or armature is None:
-            return "no armature/mesh selected"
+            return LANG["report.no_active"]
         # 遍历每个修改器
         for modifier in obj.modifiers:
             # 判断修改器是否是骨骼修改器
@@ -382,8 +521,12 @@ class Kit(Operator):
     def select_vg(name):
         bpy.ops.object.vertex_group_set_active(group=name)
 
-    def update_label_vg(context, string):
-        context.scene.vertex_group_string = f"current vertex group: {string}"
+    def update_label_vg(string):
+        context = bpy.context
+        context.scene.vertex_group_string = (
+            LANG["mainpanel.vertex_group_string"] + f"{string}"
+        )
+        return context.scene.vertex_group_string
 
     def is_mesh(scene, obj):
         return obj.type == "MESH"
@@ -393,9 +536,9 @@ class Kit(Operator):
 
 
 class StartAssign(Operator):
-    bl_idname = "object.start_assignment"
-    bl_label = "start assign"
-    bl_description = "Start assign bones' name to vertex groups"
+    bl_idname = "mainpanel.start_assignment"
+    bl_label = LANG[bl_idname]
+    bl_description = LANG[bl_idname + ".tip"]
 
     def execute(self, context):
         vg_list = []
@@ -409,13 +552,13 @@ class StartAssign(Operator):
 
 
 class Next(Operator):
-    bl_idname = "object.next"
-    bl_label = "next"
-    bl_description = "Add current selected bones and vertex group to rename list"
+    bl_idname = "mainpanel.next"
+    bl_label = LANG[bl_idname]
+    bl_description = LANG[bl_idname + ".tip"]
 
     def execute(self, context):
         if bpy.context.object.mode != "WEIGHT_PAINT":
-            Kit.report("please enter weight paint mode")
+            Kit.report(LANG["report.not_weight_mode"])
             return {"FINISHED"}
         selected_mesh = context.scene.mesh_pointer
         selected_bone = bpy.context.selected_pose_bones
@@ -423,7 +566,7 @@ class Next(Operator):
         index = context.scene.assign_index
         vg_list = Kit.get_all_vg(selected_mesh)
         if len(selected_bone) == 0:
-            Kit.report("no bone selected")
+            Kit.report(LANG["report.no_active_bone"])
             return {"FINISHED"}
         if index >= 0 and index < len(vg_list):
             item = list.add()
@@ -435,19 +578,19 @@ class Next(Operator):
             Kit.select_vg(vg_list[index]["name"])
             Kit.update_label_vg(context, vg_list[index]["name"])
         else:
-            context.scene.vertex_group_string = f"current vertex group: {None}"
+            Kit.update_label_vg(str(None))
         context.scene.assign_index = index
         return {"FINISHED"}
 
 
 class Skip(Operator):
-    bl_idname = "object.skip"
-    bl_label = "skip"
-    bl_description = "Skip current bone"
+    bl_idname = "mainpanel.skip"
+    bl_label = LANG[bl_idname]
+    bl_description = LANG[bl_idname + ".tip"]
 
     def execute(self, context):
         if bpy.context.object.mode != "WEIGHT_PAINT":
-            Kit.report("please enter weight paint mode")
+            Kit.report(LANG["report.not_weight_mode"])
             return {"FINISHED"}
         selected_mesh = context.scene.mesh_pointer
         index = context.scene.assign_index
@@ -460,32 +603,33 @@ class Skip(Operator):
             Kit.select_vg(vg_list[index]["name"])
             Kit.update_label_vg(context, vg_list[context.scene.assign_index]["name"])
         else:
-            context.scene.vertex_group_string = f"current vertex group: {None}"
+            Kit.update_label_vg(str(None))
         context.scene.assign_index = index
         return {"FINISHED"}
 
 
 class Stop(Operator):
-    bl_idname = "object.stop"
-    bl_label = "reset assign"
-    bl_description = "Stop and reset the assign process"
+    bl_idname = "mainpanel.stop"
+    bl_label = LANG[bl_idname]
+    bl_description = LANG[bl_idname + ".tip"]
 
     def execute(self, context):
         index = 0
-        context.scene.vertex_group_string = f"current vertex group: {None}"
+        Kit.update_label_vg(str(None))
         context.scene.assign_index = index
         print("stop quick assign")
         return {"FINISHED"}
 
 
 class Done(Operator):
-    bl_idname = "object.done"
-    bl_label = "rename"
-    bl_description = "Start rename for the current rename list"
+    bl_idname = "mainpanel.done"
+    bl_label = LANG[bl_idname]
+    bl_description = LANG[bl_idname + ".tip"]
 
     def execute(self, context):
+        print("starting...")
         if bpy.context.object.mode != "WEIGHT_PAINT":
-            Kit.report("please enter weight paint mode")
+            Kit.report(LANG["report.not_weight_mode"])
             return {"FINISHED"}
         mesh = bpy.data.objects[context.scene.mesh_pointer.name]
         my_list = context.scene.my_list
@@ -495,7 +639,12 @@ class Done(Operator):
             for vg in vg_list:
                 if vg["name"] == i.bone:
                     old_name = vg["name"]
-                    new_suffix = ".old.001"
+                    print(
+                        f"Vertex Group: {old_name} and Bone: {i.bone} is the same, please change the vertex group name"
+                    )
+                    Kit.report(LANG["report.name_collision"])
+                    return {"FINISHED"}
+                    """new_suffix = ".old.001"
                     vertex_group = vertex_groups.get(old_name)
                     new_name = old_name + new_suffix
                     index = 1
@@ -506,7 +655,7 @@ class Done(Operator):
                         vertex_group.name = new_name
                         print(f"{[old_name]} -> {new_name} renamed")
                     else:
-                        print(f'No vertex group found with name "{[old_name]}"')
+                        print(f'No vertex group found with name "{[old_name]}"')"""
 
         duplicates_dict = {}
         for i, item in enumerate(my_list):
@@ -523,6 +672,13 @@ class Done(Operator):
             my_list_index = dup[1]
             vertex_group_names = []
             for i in my_list_index:
+                is_exist = False
+                for vg in vg_list:
+                    if my_list[i].vg == vg["name"]:
+                        is_exist = True
+                if not is_exist:
+                    print(f'No vertex group found with name "{[my_list[i].vg]}"')
+                    continue
                 vertex_group_names.append(my_list[i].vg)
             vertex_group = mesh.vertex_groups.new(name=merged_group_name)
 
@@ -542,7 +698,8 @@ class Done(Operator):
             # add the values to the group
             for key, value in vertex_weights.items():
                 vertex_group.add([key], value, "REPLACE")  # 'ADD','SUBTRACT'
-
+            print(f"{[vertex_group_names]} -> {merged_group_name} renamed")
+        # print(f"{vg_list}")
         for item in my_list:
             is_dup = False
             for dup in duplicates:
@@ -552,11 +709,18 @@ class Done(Operator):
                 continue
             old_name = item.vg
             new_name = item.bone
+            is_exist = False
+            for vg in vg_list:
+                if old_name == vg["name"]:
+                    is_exist = True
+            if not is_exist:
+                print(f'No vertex group found with name "{[old_name]}"')
+                continue
             Kit.select_vg(old_name)
             bpy.ops.object.vertex_group_copy()
             vertex_groups[-1].name = new_name
             print(f"{[old_name]} -> {new_name} renamed")
-        Kit.report("done!")
+        Kit.report(LANG["report.done"])
         print("done!")
         return {"FINISHED"}
 
@@ -594,7 +758,8 @@ def register():
     Scene.list_index = IntProperty(name="list index", default=0)
     Scene.assign_index = IntProperty(name="global index", default=-1)
     Scene.vertex_group_string = StringProperty(
-        name="vertex_group_string", default=f"current vertex group: {None}"
+        name="vertex_group_string",
+        default=LANG["mainpanel.vertex_group_string"] + str(None),
     )
 
 
