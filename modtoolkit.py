@@ -547,7 +547,7 @@ class StartAssign(Operator):
         context.scene.assign_index = 0
         vg_list = Kit.get_all_vg(selected_mesh)
         Kit.select_vg(vg_list[context.scene.assign_index]["name"])
-        Kit.update_label_vg(context, vg_list[context.scene.assign_index]["name"])
+        Kit.update_label_vg(vg_list[context.scene.assign_index]["name"])
         return {"FINISHED"}
 
 
@@ -576,7 +576,7 @@ class Next(Operator):
             index += 1
         if index < len(vg_list):
             Kit.select_vg(vg_list[index]["name"])
-            Kit.update_label_vg(context, vg_list[index]["name"])
+            Kit.update_label_vg(vg_list[index]["name"])
         else:
             Kit.update_label_vg(str(None))
         context.scene.assign_index = index
@@ -601,7 +601,7 @@ class Skip(Operator):
             index += 1
         if index < len(vg_list):
             Kit.select_vg(vg_list[index]["name"])
-            Kit.update_label_vg(context, vg_list[context.scene.assign_index]["name"])
+            Kit.update_label_vg(vg_list[context.scene.assign_index]["name"])
         else:
             Kit.update_label_vg(str(None))
         context.scene.assign_index = index
