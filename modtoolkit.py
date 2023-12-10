@@ -601,7 +601,7 @@ class Skip(Operator):
             index += 1
         if index < len(vg_list):
             Kit.select_vg(vg_list[index]["name"])
-            Kit.update_label_vg(vg_list[context.scene.assign_index]["name"])
+            Kit.update_label_vg(vg_list[index]["name"])
         else:
             Kit.update_label_vg(str(None))
         context.scene.assign_index = index
