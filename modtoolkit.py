@@ -240,9 +240,9 @@ class CreditPanel(Panel):
     def draw(self, context):
         layout = self.layout
         name = "0w0-Yui"
-        op = layout.operator("wm.url_open", text=f"Github: {name}")
+        op = layout.operator("wm.url_open", text=LANG["creditpanel.github"])
         op.url = "https://github.com/0w0-Yui"
-        op1 = layout.operator("wm.url_open", text=f"Github: {name}")
+        op1 = layout.operator("wm.url_open", text=LANG["creditpanel.bilibili"])
         op1.url = "https://space.bilibili.com/276237700"
 
 
