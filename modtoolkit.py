@@ -257,7 +257,7 @@ class RemoveUnused(Operator):
         if object.type != "MESH":
             Kit.report(LANG["report.no_active_mesh"])
             return {"FINISHED"}
-        if skeleton is not None:
+        if skeleton is None:
             Kit.report(LANG["report.no_armature"])
             return {"FINISHED"}
         if object.type == "MESH" and len(object.vertex_groups) > 0:
