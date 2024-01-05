@@ -2,7 +2,7 @@ bl_info = {
     "name": "Yui's Modding Toolkit",
     "description": "Useful toolkit for modding",
     "author": "0w0-Yui <yui@lioat.cn>",
-    "version": (0, 5, 0),
+    "version": (0, 5, 1),
     "blender": (2, 83, 0),
     "location": "View 3D > Toolshelf",
     "doc_url": "https://github.com/0w0-Yui/modtoolkit",
@@ -52,7 +52,7 @@ class Localization:
             "mainpanel.done": "start rename",
             "mainpanel.done.tip": "Start rename for the current rename list",
             # presets panel
-            "mainpanel.presets": "presets",
+            "menu_presets": "presets",
             "presets.save": "save",
             "presets.delete": "delete",
             "presets.tip": "Save or delete preset from local",
@@ -106,7 +106,7 @@ class Localization:
             "mainpanel.done": "开始重命名",
             "mainpanel.done.tip": "根据当前重命名列表开始批量重命名顶点组",
             # presets panel
-            "mainpanel.presets": "重命名列表预设",
+            "menu_presets": "重命名列表预设",
             "presets.save": "保存",
             "presets.delete": "删除",
             "presets.tip": "保存或删除当前重命名列表预设",
@@ -204,7 +204,7 @@ class LIST_OT_DeleteItem(Operator):
 
 
 class menu_presets(Menu):
-    bl_idname = "mainpanel.presets"
+    bl_idname = "menu_presets"
     bl_label = LANG[bl_idname]
     bl_icon = "PRESET"
 
@@ -214,10 +214,10 @@ class menu_presets(Menu):
 
 
 class add_presets(AddPresetBase, Operator):
-    bl_idname = "presets.tip"
+    bl_idname = "menu.add_preset"
     bl_sub_idname = "presets"
     bl_label = ""
-    bl_description = LANG[bl_idname]
+    bl_description = LANG[bl_sub_idname + ".tip"]
     preset_menu = "menu_presets"
 
     # variable used for all preset values
