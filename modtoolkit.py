@@ -2,7 +2,7 @@ bl_info = {
     "name": "Yui's Modding Toolkit",
     "description": "Useful toolkit for modding",
     "author": "0w0-Yui <yui@lioat.cn>",
-    "version": (0, 5, 1),
+    "version": (0, 5, 2),
     "blender": (2, 83, 0),
     "location": "View 3D > Toolshelf",
     "doc_url": "https://github.com/0w0-Yui/modtoolkit",
@@ -11,7 +11,13 @@ bl_info = {
 }
 
 import bpy
-from bpy.props import IntProperty, StringProperty, PointerProperty, CollectionProperty
+from bpy.props import (
+    IntProperty,
+    StringProperty,
+    PointerProperty,
+    CollectionProperty,
+    BoolProperty,
+)
 from bpy.types import (
     PropertyGroup,
     UIList,
@@ -34,23 +40,25 @@ class Localization:
             "mainpanel.armature_pointer": "select an armature:",
             "mainpanel.mesh_pointer": "select a mesh:",
             "mainpanel.start_assignment": "start assign",
-            "mainpanel.start_assignment.tip": "Start assign bones' name to vertex groups",
+            "mainpanel.start_assignment.tip": "start assign bones' name to vertex groups",
             "mainpanel.stop": "reset assign",
-            "mainpanel.stop.tip": "Stop and reset the assign process",
+            "mainpanel.stop.tip": "stop and reset the assign process",
             # vertex group assignment panel
             "mainpanel.vertex_group_string": "current vertex group: ",
             "mainpanel.next": "next",
-            "mainpanel.next.tip": "Add current selected bones and vertex group to rename list",
+            "mainpanel.next.tip": "add current selected bones and vertex group to rename list",
             "mainpanel.skip": "skip",
-            "mainpanel.skip.tip": "Skip assignment for current bone",
+            "mainpanel.skip.tip": "skip assignment for current bone",
             "ul_list.vg.tip": "vertex group name",
             "ul_list.bone.tip": "target bone name",
             "my_list.new_item": "add",
-            "my_list.new_item.tip": "Add an item from list",
+            "my_list.new_item.tip": "add an item from list",
             "my_list.delete_item": "remove",
             "my_list.delete_item.tip": "Remove an item from list",
             "mainpanel.done": "start rename",
-            "mainpanel.done.tip": "Start rename for the current rename list",
+            "mainpanel.done.tip": "start rename for the current rename list",
+            "mainpanel.ismerging": "enable merging (experimental)",
+            "mainpanel.ismerging.tip": "merge with existed vertex group after rename",
             # presets panel
             "menu_presets": "presets",
             "presets.save": "save",
@@ -60,14 +68,14 @@ class Localization:
             "presets.open_folder.tip": "Open presets folder in the explorer",
             # misc panel
             "miscpanel.label": "Misc",
-            "miscpanel.remove_empty": "Remove Empty VG",
-            "miscpanel.remove_empty.tip": "Remove all empty vertex group for active mesh",
-            "miscpanel.remove_unused": "Remove Unused VG",
-            "miscpanel.remove_unused.tip": "Remove all unused vertex group for active mesh",
-            "miscpanel.merge_mats": "Auto Merge Mats",
-            "miscpanel.merge_mats.tip": "Merge materials with same texture for active mesh",
-            "miscpanel.select_seams": "Select Seams",
-            "miscpanel.select_seams.tip": "Select edges marked as seams for active mesh",
+            "miscpanel.remove_empty": "remove Empty VG",
+            "miscpanel.remove_empty.tip": "remove all empty vertex group for active mesh",
+            "miscpanel.remove_unused": "remove Unused VG",
+            "miscpanel.remove_unused.tip": "remove all unused vertex group for active mesh",
+            "miscpanel.merge_mats": "auto Merge Mats",
+            "miscpanel.merge_mats.tip": "merge materials with same texture for active mesh",
+            "miscpanel.select_seams": "select Seams",
+            "miscpanel.select_seams.tip": "select edges marked as seams for active mesh",
             # credit panel
             "creditpanel.label": "Credit",
             "creditpanel.github": "Github: 0w0-Yui",
@@ -105,6 +113,8 @@ class Localization:
             "my_list.delete_item.tip": "删除选中重命名列表项",
             "mainpanel.done": "开始重命名",
             "mainpanel.done.tip": "根据当前重命名列表开始批量重命名顶点组",
+            "mainpanel.ismerging": "启用合并 (实验性功能)",
+            "mainpanel.ismerging.tip": "重命名后会并入已有的顶点组",
             # presets panel
             "menu_presets": "重命名列表预设",
             "presets.save": "保存",
@@ -454,7 +464,9 @@ class MyAddonPanel(Panel):
             row1.operator(
                 LIST_OT_DeleteItem.bl_idname, text=LIST_OT_DeleteItem.bl_label
             )
+
             box1.operator(Done.bl_idname, text=Done.bl_label)
+            box1.prop(scene, "is_merging")
 
             box2 = layout.box()
             row = box2.row()
@@ -631,14 +643,24 @@ class Done(Operator):
         if bpy.context.object.mode != "WEIGHT_PAINT":
             Kit.report(LANG["report.not_weight_mode"])
             return {"FINISHED"}
+        scene = context.scene
         mesh = bpy.data.objects[context.scene.mesh_pointer.name]
         my_list = context.scene.my_list
         vg_list = Kit.get_all_vg(mesh)
         vertex_groups = mesh.vertex_groups
+        duplicates_dict = {}
+        added_list = []
         for i in my_list:
             for vg in vg_list:
                 if vg["name"] == i.bone:
                     old_name = vg["name"]
+                    if scene.is_merging:
+                        if old_name not in added_list and i.vg != i.bone:
+                            item = my_list.add()
+                            item.vg = old_name
+                            item.bone = i.bone
+                            added_list.append(old_name)
+                        continue
                     print(
                         f"Vertex Group: {old_name} and Bone: {i.bone} is the same, please change the vertex group name"
                     )
@@ -657,7 +679,6 @@ class Done(Operator):
                     else:
                         print(f'No vertex group found with name "{[old_name]}"')"""
 
-        duplicates_dict = {}
         for i, item in enumerate(my_list):
             if item.bone in duplicates_dict:
                 duplicates_dict[item.bone].append(i)
@@ -680,7 +701,20 @@ class Done(Operator):
                     print(f'No vertex group found with name "{[my_list[i].vg]}"')
                     continue
                 vertex_group_names.append(my_list[i].vg)
+
+            if merged_group_name in vertex_group_names:
+                vertex_group = vertex_groups.get(merged_group_name)
+                new_suffix = ".old"
+                new_name = merged_group_name + new_suffix
+                if vertex_group is not None:
+                    vertex_group.name = new_name
+                    vertex_group_names[vertex_group_names.index(merged_group_name)] = (
+                        new_name
+                    )
+                    print(f"{[merged_group_name]} -> {new_name} renamed")
+
             vertex_group = mesh.vertex_groups.new(name=merged_group_name)
+            # vertex_group += merging_groups
 
             vertex_weights = {}
             for vert in mesh.data.vertices:
@@ -760,6 +794,11 @@ def register():
     Scene.vertex_group_string = StringProperty(
         name="vertex_group_string",
         default=LANG["mainpanel.vertex_group_string"] + str(None),
+    )
+    Scene.is_merging = BoolProperty(
+        name=LANG["mainpanel.ismerging"],
+        description=LANG["mainpanel.ismerging" + ".tip"],
+        default=False,
     )
 
 
