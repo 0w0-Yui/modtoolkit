@@ -2,7 +2,7 @@ bl_info = {
     "name": "Yui's Modding Toolkit",
     "description": "Useful toolkit for modding",
     "author": "0w0-Yui <yui@lioat.cn>",
-    "version": (0, 5, 2),
+    "version": (0, 5, 4),
     "blender": (2, 83, 0),
     "location": "View 3D > Toolshelf",
     "doc_url": "https://github.com/0w0-Yui/modtoolkit",
@@ -43,6 +43,8 @@ class Localization:
             "mainpanel.start_assignment.tip": "start assign bones' name to vertex groups",
             "mainpanel.stop": "reset assign",
             "mainpanel.stop.tip": "stop and reset the assign process",
+            "mainpanel.is_mid_start": "unused vertex groups only (experimental)",
+            "mainpanel.is_mid_start.tip": "sort by bone hierarchy, and start rename with unused vertex groups",
             # vertex group assignment panel
             "mainpanel.vertex_group_string": "current vertex group: ",
             "mainpanel.next": "next",
@@ -68,13 +70,13 @@ class Localization:
             "presets.open_folder.tip": "Open presets folder in the explorer",
             # misc panel
             "miscpanel.label": "Misc",
-            "miscpanel.remove_empty": "remove Empty VG",
+            "miscpanel.remove_empty": "remove empty VG",
             "miscpanel.remove_empty.tip": "remove all empty vertex group for active mesh",
-            "miscpanel.remove_unused": "remove Unused VG",
+            "miscpanel.remove_unused": "remove unused VG",
             "miscpanel.remove_unused.tip": "remove all unused vertex group for active mesh",
-            "miscpanel.merge_mats": "auto Merge Mats",
+            "miscpanel.merge_mats": "auto merge mats",
             "miscpanel.merge_mats.tip": "merge materials with same texture for active mesh",
-            "miscpanel.select_seams": "select Seams",
+            "miscpanel.select_seams": "select seams",
             "miscpanel.select_seams.tip": "select edges marked as seams for active mesh",
             # credit panel
             "creditpanel.label": "Credit",
@@ -99,6 +101,8 @@ class Localization:
             "mainpanel.start_assignment.tip": "开始将骨骼名称指定给顶点组",
             "mainpanel.stop": "重置指定",
             "mainpanel.stop.tip": "停止并重置指定流程",
+            "mainpanel.is_mid_start": "仅指定未使用顶点组 (实验性功能)",
+            "mainpanel.is_mid_start.tip": "先按骨骼层级排序, 然后从骨骼未使用的顶点组开始指定",
             # vertex group assignment panel
             "mainpanel.vertex_group_string": "当前顶点组: ",
             "mainpanel.next": "下一个",
@@ -315,6 +319,7 @@ class MergeTextureMaterial(Operator):
 
     def execute(self, context):
         obj = bpy.context.object
+        bpy.ops.object.material_slot_remove_unused()
         mat_dict = {}
         if obj.type == "MESH":
             for mat_slot in obj.material_slots:
@@ -361,7 +366,7 @@ class MergeTextureMaterial(Operator):
         # return {"FINISHED"}
 
         for key, value in flipped.items():
-            # print(key,value)
+            # print(key, value)
             for index in value[1:]:
                 print(f"{index} merge into {value[0]}")
                 # continue
@@ -453,6 +458,7 @@ class MyAddonPanel(Panel):
             row = box1.row(align=True)
             row.operator(Next.bl_idname, text=Next.bl_label)
             row.operator(Skip.bl_idname, text=Skip.bl_label)
+            box1.prop(scene, "is_mid_start")
 
             row = box1.row()
             row.template_list(
@@ -553,13 +559,33 @@ class StartAssign(Operator):
     bl_description = LANG[bl_idname + ".tip"]
 
     def execute(self, context):
+        if bpy.context.object.mode != "WEIGHT_PAINT":
+            Kit.report(LANG["report.not_weight_mode"])
+            return {"FINISHED"}
         vg_list = []
         selected_mesh = context.scene.mesh_pointer
+        scene = context.scene
+        object = context.object
+        skeleton = object.find_armature()
         print("start quick assign")
-        context.scene.assign_index = 0
+        if object.type != "MESH":
+            Kit.report(LANG["report.no_active_mesh"])
+            return {"FINISHED"}
+        if skeleton is None:
+            Kit.report(LANG["report.no_armature"])
+            return {"FINISHED"}
+        if scene.is_mid_start:
+            bpy.ops.object.vertex_group_sort(sort_type="BONE_HIERARCHY")
+            if object.type == "MESH" and len(object.vertex_groups) > 0:
+                for vGroup in object.vertex_groups:
+                    if skeleton.data.bones.get(vGroup.name) is None:
+                        scene.assign_index = object.vertex_groups.find(vGroup.name)
+                        break
+        else:
+            scene.assign_index = 0
         vg_list = Kit.get_all_vg(selected_mesh)
-        Kit.select_vg(vg_list[context.scene.assign_index]["name"])
-        Kit.update_label_vg(vg_list[context.scene.assign_index]["name"])
+        Kit.select_vg(vg_list[scene.assign_index]["name"])
+        Kit.update_label_vg(vg_list[scene.assign_index]["name"])
         return {"FINISHED"}
 
 
@@ -798,6 +824,11 @@ def register():
     Scene.is_merging = BoolProperty(
         name=LANG["mainpanel.ismerging"],
         description=LANG["mainpanel.ismerging" + ".tip"],
+        default=False,
+    )
+    Scene.is_mid_start = BoolProperty(
+        name=LANG["mainpanel.is_mid_start"],
+        description=LANG["mainpanel.is_mid_start" + ".tip"],
         default=False,
     )
 
